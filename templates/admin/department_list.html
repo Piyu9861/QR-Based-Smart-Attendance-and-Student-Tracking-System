@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Departments — K.P. Patil{% endblock %}
+{% block topbar_title %}<i class="fas fa-building" style="color:var(--gold)"></i> Departments{% endblock %}
+{% block topbar_actions %}
+<a href="/departments/add" class="btn btn-gold btn-sm"><i class="fas fa-plus"></i> Add Department</a>
+{% endblock %}
+{% block sidebar_nav %}
+<div class="nav-section-label">Navigation</div>
+<a class="nav-link" href="/dashboard"><i class="fas fa-chart-pie"></i> Dashboard</a>
+<a class="nav-link active" href="/departments"><i class="fas fa-building"></i> Departments</a>
+<a class="nav-link" href="/students"><i class="fas fa-user-graduate"></i> Students</a>
+<a class="nav-link" href="/teachers"><i class="fas fa-chalkboard-teacher"></i> Teachers</a>
+<a class="nav-link" href="/hods"><i class="fas fa-user-tie"></i> HODs</a>
+{% endblock %}
+{% block content %}
+<div class="section-hdr">
+  <div class="section-hdr-left"><div class="sh-title">All Departments</div><div class="sh-sub">{{ depts|length }} departments configured</div></div>
+  <a href="/departments/add" class="btn btn-gold btn-sm"><i class="fas fa-plus"></i> Add Department</a>
+</div>
+<div class="grid-3">
+{% for d in depts %}
+<div class="dept-card" style="cursor:default;">
+  <div style="font-size:32px;margin-bottom:10px;">🏛️</div>
+  <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px;">{{ d.department_name }}</div>
+  {% if d.short_name %}<div style="display:inline-block;background:rgba(240,180,41,.15);color:var(--gold);border-radius:20px;padding:2px 12px;font-size:11px;font-weight:700;">{{ d.short_name }}</div>{% endif %}
+</div>
+{% else %}
+<p style="color:var(--muted);grid-column:1/-1;text-align:center;padding:40px;">No departments found. <a href="/departments/add" style="color:var(--gold)">Add one</a></p>
+{% endfor %}
+</div>
+{% endblock %}

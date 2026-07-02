@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}HODs — K.P. Patil{% endblock %}
+{% block topbar_title %}<i class="fas fa-user-tie" style="color:var(--gold)"></i> HOD Management{% endblock %}
+{% block topbar_actions %}
+<a href="/hods/add" class="btn btn-gold btn-sm"><i class="fas fa-plus"></i> Add HOD</a>
+{% endblock %}
+{% block sidebar_nav %}
+<div class="nav-section-label">Admin</div>
+<a class="nav-link" href="/dashboard"><i class="fas fa-chart-pie"></i> Dashboard</a>
+<a class="nav-link active" href="/hods"><i class="fas fa-user-tie"></i> HODs</a>
+<a class="nav-link" href="/teachers"><i class="fas fa-chalkboard-teacher"></i> Teachers</a>
+<a class="nav-link" href="/students"><i class="fas fa-user-graduate"></i> Students</a>
+<a class="nav-link" href="/departments"><i class="fas fa-building"></i> Departments</a>
+{% endblock %}
+{% block content %}
+<div class="section-hdr">
+  <div class="section-hdr-left">
+    <div class="sh-title">HOD Management</div>
+    <div class="sh-sub">{{ hods|length }} HODs registered</div>
+  </div>
+  <a href="/hods/add" class="btn btn-gold btn-sm"><i class="fas fa-plus"></i> Add HOD</a>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:24px;">
+{% for h in hods %}
+<div class="dept-card" style="cursor:default;">
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+    <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:var(--navy);flex-shrink:0;">
+      {{ h.name[0]|upper if h.name else '?' }}
+    </div>
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;">{{ h.name }}</div>
+      <div style="font-size:12px;color:var(--muted);">{{ h.department_name or 'No Dept' }}</div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+    <div style="font-size:12px;color:var(--muted);"><i class="fas fa-envelope" style="width:14px;color:var(--gold);"></i> {{ h.email or '—' }}</div>
+    <div style="font-size:12px;color:var(--muted);"><i class="fas fa-phone" style="width:14px;color:var(--gold);"></i> {{ h.mobile or '—' }}</div>
+    <div style="font-size:12px;color:var(--muted);"><i class="fas fa-key" style="width:14px;color:var(--gold);"></i> Login: <code style="background:rgba(240,180,41,.1);color:var(--gold);padding:1px 6px;border-radius:4px;">{{ h.username }}</code></div>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <a href="/hods/edit?id={{ h.id }}" class="btn btn-outline btn-sm" style="flex:1;justify-content:center;"><i class="fas fa-edit"></i> Edit</a>
+    <a href="/hods/delete?id={{ h.id }}" class="btn btn-sm" style="flex:1;justify-content:center;background:rgba(245,101,101,.12);border:1px solid rgba(245,101,101,.25);color:var(--red);" onclick="return confirm('Delete HOD {{ h.name }}? This cannot be undone.')"><i class="fas fa-trash"></i> Delete</a>
+  </div>
+</div>
+{% else %}
+<p style="color:var(--muted);grid-column:1/-1;text-align:center;padding:40px;">No HODs found. <a href="/hods/add" style="color:var(--gold);">Add one</a></p>
+{% endfor %}
+</div>
+{% endblock %}

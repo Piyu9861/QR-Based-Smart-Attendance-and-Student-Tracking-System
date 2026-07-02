@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}SMS Log — K.P. Patil{% endblock %}
+{% block topbar_title %}<i class="fas fa-sms" style="color:var(--gold)"></i> Parent SMS Log{% endblock %}
+{% block sidebar_nav %}
+<a class="nav-link" href="/dashboard"><i class="fas fa-chart-pie"></i> Dashboard</a>
+<a class="nav-link active" href="/sms-log"><i class="fas fa-sms"></i> SMS Log</a>
+{% endblock %}
+{% block content %}
+<div class="section-hdr">
+  <div class="section-hdr-left">
+    <div class="sh-title">Parent SMS Notifications</div>
+    <div class="sh-sub">{{ logs|length }} messages sent</div>
+  </div>
+</div>
+<div class="card" style="padding:0;overflow:hidden;">
+  <table class="data-table">
+    <thead><tr><th>#</th><th>Student</th><th>Parent Mobile</th><th>Message</th><th>Type</th><th>Sent At</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for l in logs %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td><strong>{{ l.student_name or '—' }}</strong><br><span style="font-size:11px;color:var(--muted);">Roll: {{ l.roll_no or '—' }}</span></td>
+      <td style="font-family:monospace;font-size:13px;">{{ l.parent_mobile }}</td>
+      <td style="font-size:12px;color:var(--muted);max-width:300px;">{{ l.message }}</td>
+      <td><span class="badge {% if l.type=='absent_alert' %}badge-red{% else %}badge-green{% endif %}">{{ l.type }}</span></td>
+      <td style="font-size:12px;">{{ l.sent_at }}</td>
+      <td><span class="badge badge-green">{{ l.status }}</span></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:40px;">No SMS messages sent yet</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

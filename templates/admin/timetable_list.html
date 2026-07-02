@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Timetable — K.P. Patil{% endblock %}
+{% block topbar_title %}<i class="fas fa-calendar-alt" style="color:var(--gold)"></i> Timetable{% endblock %}
+{% block topbar_actions %}
+<a href="/timetable/add" class="btn btn-gold btn-sm"><i class="fas fa-plus"></i> Add Entry</a>
+{% endblock %}
+{% block sidebar_nav %}
+<a class="nav-link" href="/dashboard"><i class="fas fa-chart-pie"></i> Dashboard</a>
+<a class="nav-link active" href="/timetable"><i class="fas fa-calendar-alt"></i> Timetable</a>
+{% endblock %}
+{% block content %}
+<div class="section-hdr">
+  <div class="section-hdr-left"><div class="sh-title">College Timetable</div><div class="sh-sub">{{ timetable|length }} entries</div></div>
+  <a href="/timetable/add" class="btn btn-gold btn-sm"><i class="fas fa-plus"></i> Add Entry</a>
+</div>
+<div class="card" style="padding:0;overflow:hidden;">
+  <table class="data-table">
+    <thead><tr><th>Department</th><th>Class</th><th>Day</th><th>Time</th><th>Subject</th><th>Teacher</th><th>Room</th></tr></thead>
+    <tbody>
+    {% for t in timetable %}
+    <tr>
+      <td style="font-size:12px;">{{ t.department_name or '—' }}</td>
+      <td><span class="badge badge-blue">{{ t.class_name }} {{ t.division }}</span></td>
+      <td>{{ t.day }}</td>
+      <td style="font-size:12px;">{{ t.time_slot }}</td>
+      <td>{{ t.subject_name or '—' }}</td>
+      <td style="font-size:12px;">{{ t.teacher_name or '—' }}</td>
+      <td style="font-size:12px;">{{ t.room_no or '—' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:40px;">No timetable entries</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Subjects — K.P. Patil{% endblock %}
+{% block topbar_title %}<i class="fas fa-book" style="color:var(--gold)"></i> Subjects{% endblock %}
+{% block topbar_actions %}
+<a href="/subjects/add" class="btn btn-gold btn-sm"><i class="fas fa-plus"></i> Add Subject</a>
+{% endblock %}
+{% block sidebar_nav %}
+<a class="nav-link" href="/dashboard"><i class="fas fa-chart-pie"></i> Dashboard</a>
+<a class="nav-link active" href="/subjects"><i class="fas fa-book"></i> Subjects</a>
+{% endblock %}
+{% block content %}
+<div class="section-hdr">
+  <div class="section-hdr-left"><div class="sh-title">All Subjects</div><div class="sh-sub" id="subj-count">{{ subjects|length }} subjects</div></div>
+  <a href="/subjects/add" class="btn btn-gold btn-sm"><i class="fas fa-plus"></i> Add Subject</a>
+</div>
+
+<!-- Filter Bar -->
+<div class="card" style="margin-bottom:16px;">
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+    <div>
+      <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Department</div>
+      <select id="filter-dept" class="form-input" style="width:200px;" onchange="applySubjectFilters()">
+        <option value="">All Departments</option>
+        {% for d in depts %}<option value="{{ d.id }}">{{ d.department_name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Class / Year</div>
+      <select id="filter-class" class="form-input" style="width:160px;" onchange="applySubjectFilters()">
+        <option value="">All Classes</option>
+        <option value="1st Year">FY — 1st Year</option>
+        <option value="2nd Year">SY — 2nd Year</option>
+        <option value="3rd Year">TY — 3rd Year</option>
+      </select>
+    </div>
+    <div>
+      <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Search</div>
+      <input type="text" id="filter-search" class="form-input" style="width:200px;" placeholder="Subject name..." oninput="applySubjectFilters()">
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="clearSubjectFilters()" style="align-self:flex-end;"><i class="fas fa-times"></i> Clear</button>
+  </div>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden;">
+  <table class="data-table" id="subj-table">
+    <thead><tr><th>#</th><th>Subject Name</th><th>Department</th><th>Class</th><th>Semester</th></tr></thead>
+    <tbody>
+    {% for s in subjects %}
+    <tr data-dept="{{ s.department_id }}" data-class="{{ s['class'] }}">
+      <td class="row-idx">{{ loop.index }}</td>
+      <td><strong>{{ s.subject_name }}</strong>{% if s.subject_code %} <span style="font-size:11px;color:var(--muted);">({{ s.subject_code }})</span>{% endif %}</td>
+      <td style="font-size:12px;">
+        {% for d in depts %}{% if d.id == s.department_id %}{{ d.department_name }}{% endif %}{% endfor %}
+      </td>
+      <td><span class="badge badge-blue">{{ s['class'] }}</span></td>
+      <td>Sem {{ s.semester }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:40px;">No subjects found</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+function applySubjectFilters() {
+  const dept   = document.getElementById('filter-dept').value;
+  const cls    = document.getElementById('filter-class').value;
+  const search = document.getElementById('filter-search').value.toLowerCase();
+  const rows   = document.querySelectorAll('#subj-table tbody tr[data-dept]');
+  let visible  = 0;
+  rows.forEach(tr => {
+    const deptMatch   = !dept   || tr.dataset.dept  === dept;
+    const classMatch  = !cls    || tr.dataset.class === cls;
+    const searchMatch = !search || tr.textContent.toLowerCase().includes(search);
+    const show = deptMatch && classMatch && searchMatch;
+    tr.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  document.getElementById('subj-count').textContent = visible + ' subjects';
+  // re-number visible rows
+  let idx = 1;
+  rows.forEach(tr => { if (tr.style.display !== 'none') tr.querySelector('.row-idx').textContent = idx++; });
+}
+function clearSubjectFilters() {
+  document.getElementById('filter-dept').value   = '';
+  document.getElementById('filter-class').value  = '';
+  document.getElementById('filter-search').value = '';
+  applySubjectFilters();
+}
+</script>
+{% endblock %}

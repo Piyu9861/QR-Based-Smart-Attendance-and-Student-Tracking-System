@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if action=='edit' else 'Add' }} Student — K.P. Patil{% endblock %}
+{% block topbar_title %}
+<i class="fas fa-user-graduate" style="color:var(--gold)"></i>
+{{ 'Edit Student' if action=='edit' else 'Add Student' }}
+{% endblock %}
+{% block sidebar_nav %}
+<a class="nav-link" href="/dashboard"><i class="fas fa-chart-pie"></i> Dashboard</a>
+<a class="nav-link active" href="/students"><i class="fas fa-user-graduate"></i> Students</a>
+{% endblock %}
+{% block content %}
+<div class="section-hdr">
+  <div class="section-hdr-left">
+    <div class="sh-title">{{ 'Edit Student' if action=='edit' else 'Add New Student' }}</div>
+    <div class="sh-sub">{% if action=='edit' %}Update student information and marks{% else %}Register a new student with all details{% endif %}</div>
+  </div>
+  <a href="/students" class="btn btn-outline btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+
+<div class="card" style="max-width:820px;">
+  {% if error %}
+  <div style="background:rgba(245,101,101,.1);border:1px solid rgba(245,101,101,.3);color:var(--red);
+    padding:12px 16px;border-radius:12px;margin-bottom:18px;font-size:13px;">❌ {{ error }}</div>
+  {% endif %}
+
+  <form method="POST" action="{{ '/students/update' if action=='edit' else '/students/store' }}">
+    {% if student %}<input type="hidden" name="id" value="{{ student.id }}">{% endif %}
+
+    <!-- Section 1: Identity -->
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;
+      letter-spacing:.5px;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.06);">
+      📋 Basic Information
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;">
+      <div class="form-group">
+        <label class="form-label">Roll No *</label>
+        <input class="form-input" type="text" name="roll_no"
+          value="{{ student.roll_no if student else '' }}" placeholder="01" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Enrollment No *</label>
+        <input class="form-input" type="text" name="enrollment_no"
+          value="{{ student.enrollment_no if student else '' }}" placeholder="AIML601" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Login Password</label>
+        <input class="form-input" type="text" name="password"
+          value="{{ student.password if student else 'Stud123' }}" placeholder="Stud123">
+      </div>
+      <div class="form-group" style="grid-column:1/-1;">
+        <label class="form-label">Full Name *</label>
+        <input class="form-input" type="text" name="name"
+          value="{{ student.name if student else '' }}" placeholder="Surname Name Father's Name" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" name="email"
+          value="{{ student.email if student else '' }}" placeholder="student@gmail.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mobile * (used for login)</label>
+        <input class="form-input" type="text" name="mobile"
+          value="{{ student.mobile if student else '' }}" placeholder="9XXXXXXXXX" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Parent Mobile (for SMS)</label>
+        <input class="form-input" type="text" name="parent_mobile"
+          value="{{ student.parent_mobile if student else '' }}" placeholder="8XXXXXXXXX">
+      </div>
+    </div>
+
+    <!-- Section 2: Academic -->
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;
+      letter-spacing:.5px;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.06);">
+      🎓 Academic Details
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;">
+      <div class="form-group">
+        <label class="form-label">Department *</label>
+        <select class="form-input" name="department_id" required>
+          <option value="">-- Select Dept --</option>
+          {% for d in depts %}
+          <option value="{{ d.id }}"
+            {% if student and student.department_id==d.id %}selected
+            {% elif preselect_dept and preselect_dept==d.id %}selected{% endif %}>
+            {{ d.department_name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Class (Semester) *</label>
+        <select class="form-input" name="class" required>
+          <option value="">-- Select --</option>
+          <option value="1st Year" {% if student and student['class']=='1st Year' %}selected{% endif %}>FY — 1st Year (SEM 2)</option>
+          <option value="2nd Year" {% if student and student['class']=='2nd Year' %}selected{% endif %}>SY — 2nd Year (SEM 4)</option>
+          <option value="3rd Year" {% if student and student['class']=='3rd Year' %}selected{% endif %}>TY — 3rd Year (SEM 6)</option>
+          <option value="Direct Second Year" {% if student and student['class']=='Direct Second Year' %}selected{% endif %}>Direct Second Year (DSY)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Gender</label>
+        <select class="form-input" name="gender">
+          {% for g in ['Male','Female','Other'] %}
+          <option value="{{ g }}" {% if student and student.gender==g %}selected{% endif %}>{{ g }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Caste / Category *</label>
+        <select class="form-input" name="category">
+          {% for cat in ['OPEN (General)','OBC (Other Backward Class)','SC (Scheduled Caste)','ST (Scheduled Tribe)','NT-A (Nomadic Tribe A)','NT-B (Nomadic Tribe B)','NT-C (Nomadic Tribe C)','NT-D (Nomadic Tribe D)','SBC (Special Backward Class)','VJ/DT (Vimukta Jati)','EWS (Economically Weaker Section)'] %}
+          <option value="{{ cat }}" {% if student and student.category==cat %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Admission Seat Type</label>
+        <select class="form-input" name="seat_type">
+          {% for st in ['CAP Round (Regular)','Institute Level','Direct Second Year (DSY)','Lateral Entry','Minority Seat','Tuition Fee Waiver (TFW)','Part Time'] %}
+          <option value="{{ st }}" {% if student and student.seat_type==st %}selected{% endif %}>{{ st }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Blood Group</label>
+        <select class="form-input" name="blood_group">
+          <option value="">-- Select --</option>
+          {% for bg in ['A+','A-','B+','B-','O+','O-','AB+','AB-'] %}
+          <option value="{{ bg }}" {% if student and student.blood_group==bg %}selected{% endif %}>{{ bg }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="grid-column:1/-1;">
+        <label class="form-label">Address</label>
+        <input class="form-input" type="text" name="address"
+          value="{{ student.address if student else '' }}" placeholder="Village / City, District">
+      </div>
+    </div>
+
+    <!-- Section 3: Marks -->
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;
+      letter-spacing:.5px;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.06);">
+      📊 Academic Marks (Percentage %)
+    </div>
+    <div style="background:rgba(240,180,41,.04);border:1px solid rgba(240,180,41,.12);border-radius:14px;padding:18px;margin-bottom:20px;">
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:12px;">
+        <div class="form-group">
+          <label class="form-label" style="color:var(--gold);">10th %</label>
+          <input class="form-input" type="number" step="0.01" min="0" max="100" name="mark_10th"
+            value="{{ student.mark_10th if student else '' }}" placeholder="88.50"
+            style="text-align:center;">
+        </div>
+        {% for i in range(1,7) %}
+        {% set sem_map = {1:'FY I',2:'FY II',3:'SY III',4:'SY IV',5:'TY V',6:'TY VI'} %}
+        <div class="form-group">
+          <label class="form-label">Sem {{ i }}<br><span style="font-size:9px;color:var(--muted);">{{ sem_map[i] }}</span></label>
+          <input class="form-input" type="number" step="0.01" min="0" max="100" name="mark_sem{{ i }}"
+            value="{{ student['mark_sem'~i] if student and student['mark_sem'~i] else '' }}"
+            placeholder="—" style="text-align:center;">
+        </div>
+        {% endfor %}
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px;">
+        💡 Leave blank if marks not available. Enter percentage value (e.g. 88.50 for 88.50%)
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;">
+      <button type="submit" class="btn btn-gold" style="flex:1;font-size:15px;padding:13px;">
+        <i class="fas fa-save"></i> {{ 'Update Student' if action=='edit' else 'Add Student' }}
+      </button>
+      <a href="/students" class="btn btn-outline" style="flex:1;justify-content:center;padding:13px;">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

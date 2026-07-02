@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Teachers — K.P. Patil{% endblock %}
+{% block topbar_title %}<i class="fas fa-chalkboard-teacher" style="color:var(--gold)"></i> Teacher Management{% endblock %}
+{% block topbar_actions %}
+<a href="/teachers/add" class="btn btn-gold btn-sm"><i class="fas fa-plus"></i> Add Teacher</a>
+{% endblock %}
+{% block sidebar_nav %}
+<div class="nav-section-label">Management</div>
+<a class="nav-link" href="/dashboard"><i class="fas fa-chart-pie"></i> Dashboard</a>
+<a class="nav-link active" href="/teachers"><i class="fas fa-chalkboard-teacher"></i> Teachers</a>
+<a class="nav-link" href="/students"><i class="fas fa-user-graduate"></i> Students</a>
+{% if role == 'principal' %}
+<a class="nav-link" href="/hods"><i class="fas fa-user-tie"></i> HODs</a>
+<a class="nav-link" href="/departments"><i class="fas fa-building"></i> Departments</a>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="section-hdr">
+  <div class="section-hdr-left">
+    <div class="sh-title">Teacher Management</div>
+    <div class="sh-sub">{{ teachers|length }} teachers found</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <input type="text" id="searchBox" placeholder="🔍 Search..." oninput="filterTable()"
+      style="background:rgba(255,255,255,.06);border:1px solid rgba(240,180,41,.2);color:#e2e8f8;padding:8px 14px;border-radius:10px;font-size:13px;outline:none;width:200px;">
+    <select id="deptFilter" onchange="filterTable()"
+      style="background:rgba(18,32,64,.98);border:1px solid rgba(240,180,41,.2);color:#e2e8f8;padding:8px 12px;border-radius:10px;font-size:13px;outline:none;">
+      <option value="">All Depts</option>
+      {% for d in depts %}<option value="{{ d.department_name }}">{{ d.short_name or d.department_name }}</option>{% endfor %}
+    </select>
+    <a href="/teachers/add" class="btn btn-gold btn-sm"><i class="fas fa-plus"></i> Add</a>
+  </div>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden;">
+  <table class="data-table" id="teacherTable">
+    <thead><tr>
+      <th>#</th><th>Teacher ID</th><th>Name</th><th>Department</th>
+      <th>Designation</th><th>Email</th><th>Mobile</th><th>Status</th><th>Actions</th>
+    </tr></thead>
+    <tbody>
+    {% for t in teachers %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>
+        <span style="font-family:monospace;background:rgba(240,180,41,.1);color:var(--gold);
+          padding:2px 8px;border-radius:6px;font-size:11px;">{{ t.username or 'TCH'+loop.index|string }}</span>
+      </td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--blue),#3b82f6);
+            display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;">
+            {{ t.name[0]|upper if t.name else '?' }}
+          </div>
+          <strong>{{ t.name }}</strong>
+        </div>
+      </td>
+      <td style="font-size:12px;">{{ t.department_name or '—' }}</td>
+      <td style="font-size:12px;">{{ t.designation or '—' }}</td>
+      <td style="font-size:12px;">{{ t.email or '—' }}</td>
+      <td style="font-size:12px;">{{ t.mobile or '—' }}</td>
+      <td>
+        <span class="badge {% if t.status=='active' %}badge-green{% else %}badge-red{% endif %}">
+          {{ t.status }}
+        </span>
+      </td>
+      <td>
+        <div style="display:flex;gap:4px;">
+          <a href="/teachers/edit?id={{ t.id }}" class="action-btn action-edit" title="Edit">
+            <i class="fas fa-edit"></i>
+          </a>
+          <a href="/teachers/delete?id={{ t.id }}" class="action-btn action-delete" title="Delete"
+            onclick="return confirm('Delete teacher {{ t.name }}?')">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:40px;">
+      No teachers found. <a href="/teachers/add" style="color:var(--gold);">Add one</a>
+    </td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<script>
+function filterTable(){
+  const q  = document.getElementById('searchBox').value.toLowerCase();
+  const d  = document.getElementById('deptFilter').value.toLowerCase();
+  document.querySelectorAll('#teacherTable tbody tr').forEach(tr=>{
+    const txt = tr.textContent.toLowerCase();
+    tr.style.display = txt.includes(q) && (!d || txt.includes(d)) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

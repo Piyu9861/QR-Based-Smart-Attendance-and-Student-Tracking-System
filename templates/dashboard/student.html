@@ -1,0 +1,315 @@
+{% extends 'base.html' %}
+{% block title %}Student Dashboard — K.P. Patil{% endblock %}
+{% block topbar_title %}<i class="fas fa-user-graduate" style="color:var(--gold)"></i> Student Dashboard{% endblock %}
+{% block sidebar_nav %}
+<div class="nav-section-label">My Dashboard</div>
+<a class="nav-link active" href="/dashboard"><i class="fas fa-chart-pie"></i> Attendance</a>
+<a class="nav-link" href="#" onclick="showTab('daywise')"><i class="fas fa-calendar-day"></i> Day-wise</a>
+<a class="nav-link" href="#" onclick="showTab('marks')"><i class="fas fa-graduation-cap"></i> My Marks</a>
+<a class="nav-link" href="#" onclick="showTab('profile')"><i class="fas fa-id-card"></i> My Profile</a>
+{% endblock %}
+{% block content %}
+<div class="section-hdr">
+  <div class="section-hdr-left">
+    <div class="sh-title">Welcome, {{ name }} 👋</div>
+    <div class="sh-sub">{% if dept %}{{ dept.department_name }}{% endif %}{% if student %} · {{ student['class'] }}{% endif %} · <span id="today-display"></span></div>
+  </div>
+</div>
+
+<!-- TAB BUTTONS -->
+<div style="display:flex;gap:8px;margin-bottom:22px;">
+  <button id="tab-attendance" class="btn btn-gold btn-sm" onclick="showTab('attendance')"><i class="fas fa-clipboard-check"></i> Attendance</button>
+  <button id="tab-daywise" class="btn btn-outline btn-sm" onclick="showTab('daywise')"><i class="fas fa-calendar-day"></i> Day-wise</button>
+  <button id="tab-marks" class="btn btn-outline btn-sm" onclick="showTab('marks')"><i class="fas fa-graduation-cap"></i> Marks / Results</button>
+  <button id="tab-profile" class="btn btn-outline btn-sm" onclick="showTab('profile')"><i class="fas fa-id-card"></i> Profile</button>
+</div>
+
+<!-- ═══ ATTENDANCE TAB ═══ -->
+<div id="tab-content-attendance">
+  <div class="stats-row">
+    <div class="stat-card c-green">
+      <div class="stat-icon">✅</div>
+      <div class="stat-val">{{ stats.present }}</div>
+      <div class="stat-lbl">Classes Present</div>
+    </div>
+    <div class="stat-card c-red">
+      <div class="stat-icon">❌</div>
+      <div class="stat-val">{{ stats.absent }}</div>
+      <div class="stat-lbl">Classes Absent</div>
+    </div>
+    <div class="stat-card {% if stats.percentage >= 75 %}c-green{% elif stats.percentage >= 60 %}c-gold{% else %}c-red{% endif %}">
+      <div class="stat-icon">📊</div>
+      <div class="stat-val">{{ stats.percentage }}%</div>
+      <div class="stat-lbl">Overall Attendance</div>
+      <div class="stat-hint">{% if stats.percentage >= 75 %}✓ Good Standing{% elif stats.percentage >= 60 %}⚠ Needs Improvement{% else %}🚨 Critical — Below 60%{% endif %}</div>
+    </div>
+    <div class="stat-card c-blue">
+      <div class="stat-icon">📚</div>
+      <div class="stat-val">{{ stats.total_sessions }}</div>
+      <div class="stat-lbl">Total Sessions</div>
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title"><i class="fas fa-chart-bar" style="color:var(--gold)"></i> Attendance Progress</div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;">
+      <div style="flex:1;background:rgba(255,255,255,.06);border-radius:20px;height:22px;overflow:hidden;">
+        <div style="height:100%;width:{{ stats.percentage }}%;background:{% if stats.percentage>=75 %}linear-gradient(90deg,#22d3a0,#16a37a){% elif stats.percentage>=60 %}linear-gradient(90deg,#f0b429,#f7d070){% else %}linear-gradient(90deg,#f56565,#c53030){% endif %};border-radius:20px;transition:width 1.2s ease;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#0d1b35;">
+          {% if stats.percentage > 10 %}{{ stats.percentage }}%{% endif %}
+        </div>
+      </div>
+      <span style="font-size:20px;font-weight:800;color:{% if stats.percentage>=75 %}var(--green){% elif stats.percentage>=60 %}var(--gold){% else %}var(--red){% endif %};">{{ stats.percentage }}%</span>
+    </div>
+    <div style="font-size:13px;color:var(--muted);">
+      {% if stats.percentage < 75 %}
+      ⚠️ Minimum required: <strong style="color:var(--gold);">75%</strong> &nbsp;·&nbsp;
+      You need <strong style="color:var(--red);">{{ [0, ((0.75 * stats.total_sessions) - stats.present)|int + 1]|max }} more classes</strong> to reach 75%
+      {% else %}
+      ✅ You are meeting the 75% attendance requirement.
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Subject-wise attendance -->
+  {% if stats.by_subject %}
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title"><i class="fas fa-book" style="color:var(--gold)"></i> Subject-wise Attendance</div>
+    <table class="data-table">
+      <thead><tr><th>Subject</th><th>Present</th><th>Total</th><th>Attendance</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for s in stats.by_subject %}
+      <tr>
+        <td><strong>{{ s.subject_name }}</strong></td>
+        <td style="color:var(--green);">{{ s.present }}</td>
+        <td>{{ s.total }}</td>
+        <td style="min-width:140px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="flex:1;background:rgba(255,255,255,.06);border-radius:8px;height:8px;overflow:hidden;">
+              <div style="height:100%;width:{{ s.pct }}%;background:{% if s.pct>=75 %}var(--green){% elif s.pct>=60 %}var(--gold){% else %}var(--red){% endif %};border-radius:8px;"></div>
+            </div>
+            <span style="font-size:12px;font-weight:700;min-width:36px;">{{ s.pct }}%</span>
+          </div>
+        </td>
+        <td><span class="badge {% if s.pct>=75 %}badge-green{% elif s.pct>=60 %}badge-gold{% else %}badge-red{% endif %}">{% if s.pct>=75 %}OK{% elif s.pct>=60 %}Low{% else %}Critical{% endif %}</span></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Recent attendance log -->
+  {% if stats.recent %}
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+      <div class="card-title" style="margin:0;"><i class="fas fa-history" style="color:var(--gold)"></i> Attendance Log</div>
+    </div>
+    <!-- Filter Bar -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end;">
+      <div>
+        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">From Date</div>
+        <input type="date" id="att-from" class="form-input" style="width:148px;" oninput="filterAttLog()">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">To Date</div>
+        <input type="date" id="att-to" class="form-input" style="width:148px;" oninput="filterAttLog()">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Subject</div>
+        <select id="att-subj-filter" class="form-input" style="width:190px;" onchange="filterAttLog()">
+          <option value="">All Subjects</option>
+          {% set seen = [] %}
+          {% for r in stats.recent %}
+            {% if r.subject_name and r.subject_name not in seen %}
+              {% if seen.append(r.subject_name) %}{% endif %}
+              <option value="{{ r.subject_name }}">{{ r.subject_name }}</option>
+            {% endif %}
+          {% endfor %}
+        </select>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="clearAttFilters()" style="align-self:flex-end;"><i class="fas fa-times"></i> Clear</button>
+    </div>
+    <div id="att-log-count" style="font-size:12px;color:var(--muted);margin-bottom:8px;"></div>
+    <table class="data-table" id="att-log-table">
+      <thead><tr><th>Subject</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for r in stats.recent %}
+      <tr data-subject="{{ r.subject_name or '' }}" data-date="{{ r.date }}">
+        <td>{{ r.subject_name or '—' }}</td>
+        <td>{{ r.date }}</td>
+        <td>{{ r.time }}</td>
+        <td><span class="badge badge-green">✓ Present</span></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <script>
+  function filterAttLog() {
+    const from  = document.getElementById('att-from').value;
+    const to    = document.getElementById('att-to').value;
+    const subj  = document.getElementById('att-subj-filter').value;
+    const rows  = document.querySelectorAll('#att-log-table tbody tr');
+    let count   = 0;
+    rows.forEach(tr => {
+      const d = tr.dataset.date;
+      const s = tr.dataset.subject;
+      const dateOk = (!from || d >= from) && (!to || d <= to);
+      const subjOk = !subj || s === subj;
+      tr.style.display = dateOk && subjOk ? '' : 'none';
+      if (dateOk && subjOk) count++;
+    });
+    document.getElementById('att-log-count').textContent = count + ' record(s) shown';
+  }
+  function clearAttFilters() {
+    document.getElementById('att-from').value = '';
+    document.getElementById('att-to').value   = '';
+    document.getElementById('att-subj-filter').value = '';
+    filterAttLog();
+  }
+  document.addEventListener('DOMContentLoaded', () => filterAttLog());
+  </script>
+  {% endif %}
+</div>
+
+<!-- ═══ MARKS TAB ═══ -->
+<div id="tab-content-marks" style="display:none;">
+  {% if student %}
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title"><i class="fas fa-graduation-cap" style="color:var(--gold)"></i> Academic Results — Marks Sheet</div>
+
+    <!-- 10th Marks -->
+    <div style="background:rgba(240,180,41,.06);border:1px solid rgba(240,180,41,.15);border-radius:14px;padding:18px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">🏫 10th Board Examination</div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div style="font-size:36px;font-weight:800;font-family:'Syne',sans-serif;color:var(--gold);">
+          {{ student.mark_10th or '—' }}{% if student.mark_10th %}<span style="font-size:18px;">%</span>{% endif %}
+        </div>
+        <div>
+          <div style="font-size:13px;color:var(--text);">SSC / 10th Standard</div>
+          <div style="font-size:12px;color:var(--muted);">Board Result</div>
+        </div>
+        {% if student.mark_10th %}
+        <div style="margin-left:auto;">
+          <span class="badge {% if student.mark_10th|float >= 75 %}badge-green{% elif student.mark_10th|float >= 60 %}badge-gold{% else %}badge-blue{% endif %}">
+            {% if student.mark_10th|float >= 75 %}Distinction{% elif student.mark_10th|float >= 60 %}First Class{% else %}Pass{% endif %}
+          </span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Sem 1 to 6 -->
+    <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">🎓 Semester-wise Results</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+      {% for i in range(1,7) %}
+      {% set mark = student['mark_sem' ~ i] %}
+      {% set sem_labels = {1:'FY Sem I',2:'FY Sem II',3:'SY Sem III',4:'SY Sem IV',5:'TY Sem V',6:'TY Sem VI'} %}
+      <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;text-align:center;
+        {% if mark %}border-color:{% if mark|float >= 75 %}rgba(34,211,160,.3){% elif mark|float >= 60 %}rgba(240,180,41,.3){% else %}rgba(245,101,101,.3){% endif %};{% endif %}">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">{{ sem_labels[i] }}</div>
+        {% if mark %}
+          <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:{% if mark|float>=75 %}var(--green){% elif mark|float>=60 %}var(--gold){% else %}var(--red){% endif %};">{{ mark }}<span style="font-size:14px;">%</span></div>
+          <div style="margin-top:6px;">
+            <span class="badge {% if mark|float>=75 %}badge-green{% elif mark|float>=60 %}badge-gold{% else %}badge-red{% endif %}" style="font-size:9px;">
+              {% if mark|float>=75 %}Distinction{% elif mark|float>=60 %}First Class{% elif mark|float>=50 %}Second Class{% else %}Pass{% endif %}
+            </span>
+          </div>
+        {% else %}
+          <div style="font-size:22px;color:rgba(255,255,255,.15);margin:6px 0;">—</div>
+          <div style="font-size:11px;color:var(--muted);">Not available</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- CGPA / Average -->
+    {% set marks_filled = [] %}
+    {% for i in range(1,7) %}{% if student['mark_sem'~i] %}{% set _ = marks_filled.append(student['mark_sem'~i]|float) %}{% endif %}{% endfor %}
+    {% if marks_filled %}
+    {% set avg = (marks_filled|sum / marks_filled|length)|round(2) %}
+    <div style="margin-top:16px;background:rgba(86,207,255,.06);border:1px solid rgba(86,207,255,.15);border-radius:14px;padding:16px;display:flex;align-items:center;gap:16px;">
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Average Marks (Sem {{ marks_filled|length }})</div>
+        <div style="font-family:'Syne',sans-serif;font-size:30px;font-weight:800;color:var(--blue);">{{ avg }}<span style="font-size:15px;">%</span></div>
+      </div>
+      <div style="margin-left:auto;">
+        <span class="badge badge-blue" style="font-size:11px;padding:5px 14px;">
+          {% if avg >= 75 %}Distinction{% elif avg >= 60 %}First Class{% elif avg >= 50 %}Second Class{% else %}Pass{% endif %}
+        </span>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+
+<!-- ═══ DAY-WISE ATTENDANCE TAB ═══ -->
+<div id="tab-content-daywise" style="display:none;">
+  <div class="card">
+    <div class="card-title"><i class="fas fa-calendar-day" style="color:var(--gold)"></i> Day-wise Attendance — Last 30 Days</div>
+    {% if stats.by_day %}
+    <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Day</th><th>Sessions Present</th><th>Subjects Attended</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for d in stats.by_day %}
+      {% set weekday = d.att_date %}
+      <tr>
+        <td><strong>{{ d.att_date }}</strong></td>
+        <td style="font-size:12px;color:var(--muted);">
+          {{ ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][d.att_date|string|replace('-','')|int % 7] if d.att_date else '—' }}
+        </td>
+        <td><span class="badge badge-green">{{ d.sessions_present }} session{{ 's' if d.sessions_present != 1 else '' }}</span></td>
+        <td style="font-size:12px;color:var(--muted);">{{ d.subjects or '—' }}</td>
+        <td><span class="badge badge-green" style="font-size:10px;">✓ Present</span></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:40px;">
+      <div style="font-size:48px;opacity:.3;margin-bottom:12px;">📅</div>
+      <div style="color:var(--muted);font-size:14px;">No attendance records found in last 30 days.</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ═══ PROFILE TAB ═══ -->
+<div id="tab-content-profile" style="display:none;">
+  {% if student %}
+  <div class="card">
+    <div class="card-title"><i class="fas fa-id-card" style="color:var(--gold)"></i> My Profile</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
+      <div class="info-item"><div class="info-label">Full Name</div><div class="info-val">{{ student.name }}</div></div>
+      <div class="info-item"><div class="info-label">Enrollment No</div><div class="info-val">{{ student.enrollment_no }}</div></div>
+      <div class="info-item"><div class="info-label">Roll No</div><div class="info-val">{{ student.roll_no }}</div></div>
+      <div class="info-item"><div class="info-label">Class</div><div class="info-val">{{ student['class'] }}</div></div>
+      <div class="info-item"><div class="info-label">Department</div><div class="info-val">{{ dept.department_name if dept else '—' }}</div></div>
+      <div class="info-item"><div class="info-label">Gender</div><div class="info-val">{{ student.gender or '—' }}</div></div>
+      <div class="info-item"><div class="info-label">Category</div><div class="info-val">{{ student.category or '—' }}</div></div>
+      <div class="info-item"><div class="info-label">Seat Type</div><div class="info-val">{{ student.seat_type or '—' }}</div></div>
+      <div class="info-item"><div class="info-label">Mobile</div><div class="info-val">{{ student.mobile }}</div></div>
+      <div class="info-item"><div class="info-label">Parent Mobile</div><div class="info-val">{{ student.parent_mobile or '—' }}</div></div>
+      <div class="info-item"><div class="info-label">Blood Group</div><div class="info-val">{{ student.blood_group or '—' }}</div></div>
+      <div class="info-item" style="grid-column:1/-1;"><div class="info-label">Address</div><div class="info-val">{{ student.address or '—' }}</div></div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+document.getElementById('today-display').textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+function showTab(tab){
+  ['attendance','daywise','marks','profile'].forEach(t=>{
+    document.getElementById('tab-content-'+t).style.display = t===tab ? 'block' : 'none';
+    const btn = document.getElementById('tab-'+t);
+    if(btn){ btn.className = t===tab ? 'btn btn-gold btn-sm' : 'btn btn-outline btn-sm'; }
+  });
+}
+</script>
+{% endblock %}

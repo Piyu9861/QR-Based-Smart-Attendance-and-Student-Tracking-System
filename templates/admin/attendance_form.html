@@ -1,0 +1,377 @@
+{% extends 'base.html' %}
+{% block title %}Generate QR — K.P. Patil{% endblock %}
+{% block topbar_title %}<i class="fas fa-qrcode" style="color:var(--gold)"></i> Generate QR Attendance{% endblock %}
+{% block sidebar_nav %}
+<a class="nav-link" href="/dashboard"><i class="fas fa-chart-pie"></i> Dashboard</a>
+<a class="nav-link active" href="/attendance/create"><i class="fas fa-qrcode"></i> Generate QR</a>
+{% endblock %}
+
+{% block content %}
+<div class="section-hdr">
+  <div class="section-hdr-left">
+    <div class="sh-title">Generate QR Code</div>
+    <div class="sh-sub">Students scan QR to mark attendance</div>
+  </div>
+</div>
+
+<div class="qr-layout">
+  <!-- LEFT: Settings -->
+  <div>
+    <div class="card">
+      <div class="card-title"><i class="fas fa-cog" style="color:var(--gold)"></i> Session Settings</div>
+
+      <!-- YEAR SELECT -->
+      <div class="form-group">
+        <label class="form-label">Year *</label>
+        <div class="year-tabs" id="year-tabs">
+          <button type="button" class="year-tab" onclick="selectYear('FY')" id="tab-FY">FY</button>
+          <button type="button" class="year-tab" onclick="selectYear('SY')" id="tab-SY">SY</button>
+          <button type="button" class="year-tab" onclick="selectYear('TY')" id="tab-TY">TY</button>
+        </div>
+      </div>
+
+      <!-- BATCH SELECT (A/B/C — FY only) -->
+      <div class="form-group" id="batch-group" style="display:none;">
+        <label class="form-label">Batch *</label>
+        <div class="year-tabs" id="batch-tabs">
+          <button type="button" class="year-tab" onclick="selectBatch('A')" id="tab-A">Batch A</button>
+          <button type="button" class="year-tab" onclick="selectBatch('B')" id="tab-B">Batch B</button>
+          <button type="button" class="year-tab" onclick="selectBatch('C')" id="tab-C">Batch C</button>
+        </div>
+      </div>
+
+      <!-- SUBJECT -->
+      <div class="form-group">
+        <label class="form-label">Subject *</label>
+        <select class="form-input" id="subject_id" required>
+          <option value="">-- Select Year first --</option>
+        </select>
+      </div>
+
+      <!-- DURATION -->
+      <div class="form-group">
+        <label class="form-label">QR Valid Duration</label>
+        <select class="form-input" id="duration">
+          <option value="10">10 minutes</option>
+          <option value="15" selected>15 minutes</option>
+          <option value="20">20 minutes</option>
+          <option value="30">30 minutes</option>
+          <option value="60">60 minutes</option>
+        </select>
+      </div>
+
+      <button class="btn btn-gold" style="width:100%;padding:13px;font-size:15px;" onclick="generateQR()">
+        <i class="fas fa-qrcode"></i>&nbsp; Generate QR Code
+      </button>
+    </div>
+
+    <!-- WiFi guide -->
+    <div class="card">
+      <div class="card-title"><i class="fas fa-mobile-alt" style="color:var(--gold)"></i> Student Scan Steps</div>
+      {% for step, txt in [
+        ('1','Open Camera on phone'),
+        ('2','Point at QR code on screen'),
+        ('3','Tap the link that appears'),
+        ('4','Login with your mobile number and password → Done ✅')
+      ] %}
+      <div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);">
+        <div style="width:28px;height:28px;border-radius:50%;background:rgba(240,180,41,.15);color:var(--gold);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">{{ step }}</div>
+        <div style="font-size:13px;color:var(--muted);">{{ txt }}</div>
+      </div>
+      {% endfor %}
+      <div style="background:rgba(245,101,101,.07);border:1px solid rgba(245,101,101,.2);border-radius:8px;padding:8px 12px;font-size:12px;color:#f56565;margin-top:10px;">
+        ⚠️ Students must be on the same college Wi-Fi network as the server.
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: QR Panel -->
+  <div>
+    <div class="card" id="qr-placeholder" style="text-align:center;padding:60px 20px;">
+      <div style="font-size:70px;opacity:.2;margin-bottom:14px;">📲</div>
+      <div style="color:var(--muted);font-size:14px;">QR code appears here</div>
+      <div style="color:var(--muted);font-size:12px;margin-top:6px;">Select Year + Subject → Generate</div>
+    </div>
+
+    <div class="card" id="qr-panel" style="display:none;text-align:center;">
+      <div class="card-title" style="justify-content:center;color:var(--green);"><i class="fas fa-check-circle"></i>&nbsp;QR Active</div>
+      <!-- QR image — white bg -->
+      <div id="qr-img" style="margin:0 auto 12px;display:inline-block;padding:12px;background:white;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,.3);"></div>
+      <div id="qr-info" style="background:rgba(255,255,255,.04);border-radius:10px;padding:10px 14px;margin-bottom:10px;text-align:left;font-size:12px;line-height:1.9;"></div>
+      <!-- Download + Share buttons -->
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px;">
+        <button onclick="downloadQR()" class="btn btn-gold btn-sm" style="flex:1;"><i class="fas fa-download"></i> Download QR</button>
+        <button onclick="shareQR()" class="btn btn-outline btn-sm" style="flex:1;"><i class="fas fa-share-alt"></i> Share QR</button>
+      </div>
+      <!-- Timer -->
+      <div id="qr-timer" style="font-family:'Syne',sans-serif;font-size:52px;font-weight:800;color:var(--gold);line-height:1;">15:00</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Time remaining</div>
+      <div style="background:rgba(255,255,255,.06);border-radius:20px;height:8px;overflow:hidden;margin-bottom:12px;">
+        <div id="qr-bar" style="height:100%;background:linear-gradient(90deg,var(--green),var(--gold));border-radius:20px;transition:width 1s linear;width:100%;"></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" style="flex:1;" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+        <button class="btn btn-gold btn-sm" style="flex:1;" onclick="viewPresent()"><i class="fas fa-users"></i> Present</button>
+      </div>
+      <button id="wa-share-btn" class="btn btn-sm" style="width:100%;margin-top:8px;background:rgba(37,211,102,.15);border:1.5px solid rgba(37,211,102,.35);color:#25d366;font-size:13px;" onclick="shareOnWhatsApp()">
+        <i class="fab fa-whatsapp"></i>&nbsp; Share QR Link on WhatsApp
+      </button>
+      <!-- Live present list -->
+      <div id="live-list" style="display:none;margin-top:14px;text-align:left;max-height:220px;overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ── YEAR / BATCH TABS ───────────────────────── */
+.year-tabs{display:flex;gap:8px;flex-wrap:wrap;}
+.year-tab{flex:1;padding:10px 8px;border-radius:10px;border:1.5px solid rgba(240,180,41,.25);
+  background:rgba(255,255,255,.04);color:var(--muted);font-size:14px;font-weight:700;
+  font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .18s;min-width:60px;}
+.year-tab:hover{border-color:var(--gold);color:var(--gold);}
+.year-tab.active{background:var(--gold);color:var(--navy);border-color:var(--gold);box-shadow:0 4px 14px rgba(240,180,41,.3);}
+
+/* ── RESPONSIVE LAYOUT ───────────────────────── */
+.qr-layout{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start;}
+
+@media(max-width:750px){
+  .qr-layout{grid-template-columns:1fr;}
+  .year-tab{font-size:13px;padding:9px 6px;}
+  #qr-timer{font-size:38px!important;}
+  #qr-img img{width:180px!important;height:180px!important;}
+}
+@media(max-width:500px){
+  .year-tab{font-size:12px;padding:8px 4px;}
+  .year-tabs{gap:5px;}
+}
+
+/* ── PRINT ───────────────────────────────────── */
+@media print{
+  .sidebar,.topbar,button,.form-group,.card-title,#qr-info,
+  #qr-timer,#qr-bar,#live-list,.section-hdr,.qr-layout>div:first-child{display:none!important;}
+  .main-wrap{margin-left:0!important;}
+  .qr-layout{display:block!important;}
+  #qr-panel{display:block!important;border:none!important;box-shadow:none!important;}
+  #qr-img{padding:0!important;}
+}
+</style>
+
+<script>
+// ── DATA from Flask ──────────────────────────────────
+const ALL_CLASSES  = {{ classes | tojson }};
+const ALL_SUBJECTS = {{ subjects | tojson }};
+
+// Year → class_name mapping
+const YEAR_MAP = { 'FY': '1st Year', 'SY': '2nd Year', 'TY': '3rd Year' };
+
+let selectedYear  = null;
+let selectedBatch = null;
+let selectedClassId = null;
+
+// ── SERVER IP ─────────────────────────────────────────
+
+
+// ── YEAR SELECTION ────────────────────────────────────
+function selectYear(yr) {
+  selectedYear  = yr;
+  selectedBatch = null;
+  selectedClassId = null;
+
+  // Highlight tab
+  ['FY','SY','TY'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t === yr);
+  });
+
+  // FY → show batch selector; SY/TY → hide and auto-select 'A'
+  const batchGroup = document.getElementById('batch-group');
+  if (yr === 'FY') {
+    batchGroup.style.display = 'block';
+    // Reset batch highlight
+    ['A','B','C'].forEach(b => {
+      const el = document.getElementById('tab-'+b);
+      if(el) el.classList.remove('active');
+    });
+    updateSubjects(); // subjects still shown but no class_id yet
+  } else {
+    batchGroup.style.display = 'none';
+    // SY/TY use division A (or first available)
+    const match = ALL_CLASSES.find(c => c.class_name === YEAR_MAP[yr]);
+    selectedClassId = match ? match.id : null;
+    updateSubjects();
+  }
+}
+
+// ── BATCH SELECTION (FY only) ────────────────────────
+function selectBatch(batch) {
+  selectedBatch = batch;
+  ['A','B','C'].forEach(b => {
+    document.getElementById('tab-'+b).classList.toggle('active', b === batch);
+  });
+  // Find class id for FY + this batch
+  const yr = '1st Year';
+  const match = ALL_CLASSES.find(c => c.class_name === yr && c.division === batch);
+  selectedClassId = match ? match.id : null;
+  updateSubjects();
+}
+
+// ── POPULATE SUBJECTS ─────────────────────────────────
+function updateSubjects() {
+  const sel = document.getElementById('subject_id');
+  sel.innerHTML = '<option value="">-- Select Subject --</option>';
+
+  if (!selectedYear) return;
+
+  // Map year to class value stored in subjects
+  const classVal = YEAR_MAP[selectedYear];
+
+  // Filter subjects by class (from subjects table)
+  const filtered = ALL_SUBJECTS.filter(s => s.class === classVal || !s.class);
+
+  if (!filtered.length) {
+    sel.innerHTML = '<option value="">No subjects found for this year</option>';
+    return;
+  }
+  filtered.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = s.subject_name + (s.subject_code ? ` (${s.subject_code})` : '');
+    sel.appendChild(opt);
+  });
+}
+
+// ── GENERATE QR ───────────────────────────────────────
+let timerInt = null, totalSecs = 0, sessId = null;
+
+function generateQR() {
+  if (!selectedYear) { alert('Please select a Year (FY / SY / TY)'); return; }
+  if (selectedYear === 'FY' && !selectedBatch) { alert('Please select a Batch (A / B / C) for FY'); return; }
+  if (!selectedClassId) { alert('Class not found for selected Year/Batch combination'); return; }
+  const subj = document.getElementById('subject_id').value;
+  if (!subj) { alert('Please select a Subject'); return; }
+  const dur = document.getElementById('duration').value;
+
+  const fd = new FormData();
+  fd.append('class_id', selectedClassId);
+  fd.append('subject_id', subj);
+  fd.append('duration', dur);
+
+  fetch('/attendance/generate-qr', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) { alert('Error: ' + data.error); return; }
+      sessId = data.session_id;
+      document.getElementById('qr-placeholder').style.display = 'none';
+      document.getElementById('qr-panel').style.display = 'block';
+
+      const wrap = document.getElementById('qr-img');
+      if (data.qr_image) {
+        wrap.innerHTML = `<img src="${data.qr_image}" style="width:200px;height:200px;display:block;">`;
+      } else {
+        wrap.style.padding = '16px';
+        wrap.innerHTML = `<div style="color:#000;font-size:10px;word-break:break-all;max-width:180px;">${data.qr_url}</div>`;
+      }
+
+      const yr  = selectedYear;
+      const bat = selectedBatch ? ` — Batch ${selectedBatch}` : '';
+      window._currentQrUrl = data.qr_url;
+      document.getElementById('qr-info').innerHTML =
+        `<b style="color:var(--gold)">Year:</b> ${YEAR_MAP[yr]}${bat}<br>
+         <b style="color:var(--gold)">Session:</b> #${data.session_id}<br>
+         <b style="color:var(--gold)">URL:</b> <span style="font-size:10px;word-break:break-all;color:var(--muted);">${data.qr_url}</span><br>
+         <b style="color:var(--gold)">Expires:</b> ${data.end_time.substring(0,19)}`;
+
+      if (timerInt) clearInterval(timerInt);
+      totalSecs = parseInt(data.expires_in) || (parseInt(dur) * 60);
+      let rem = totalSecs;
+      const bar = document.getElementById('qr-bar');
+      const timerEl = document.getElementById('qr-timer');
+
+      function tick() {
+        const m = Math.floor(rem / 60), s = rem % 60;
+        timerEl.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+        bar.style.width = Math.max(0, rem / totalSecs * 100) + '%';
+        if (rem <= 60) timerEl.style.color = 'var(--red)';
+        else timerEl.style.color = 'var(--gold)';
+        if (rem <= 0) {
+          clearInterval(timerInt);
+          timerEl.textContent = 'EXPIRED';
+          bar.style.width = '0%';
+        }
+        rem--;
+      }
+      tick();
+      timerInt = setInterval(tick, 1000);
+      setInterval(() => { if (sessId) refreshLive(); }, 5000);
+    })
+    .catch(e => alert('Network error: ' + e));
+}
+
+function viewPresent() {
+  document.getElementById('live-list').style.display = 'block';
+  refreshLive();
+}
+
+function shareOnWhatsApp() {
+  // Get current QR URL from the info div or reconstruct
+  const infoDiv = document.getElementById('qr-info');
+  // Extract URL from info text
+  const qrUrl = window._currentQrUrl || window.location.origin + '/scan';
+  const msg = encodeURIComponent(
+    "📋 *KP Patil Institute — QR Attendance*\n\n" +
+    "Scan this link to mark your attendance:\n" +
+    qrUrl + "\n\n" +
+    "⚠️ Must be on the same college Wi-Fi network."
+  );
+  window.open("https://wa.me/?text=" + msg, "_blank");
+}
+
+function downloadQR() {
+  const img = document.querySelector('#qr-img img');
+  if (!img) { alert('Generate QR first'); return; }
+  const a = document.createElement('a');
+  a.href = img.src;
+  a.download = 'KPPatil_QR_Session_' + (sessId || 'code') + '.png';
+  a.click();
+}
+
+function shareQR() {
+  const img = document.querySelector('#qr-img img');
+  const infoEl = document.getElementById('qr-info');
+  if (!img) { alert('Generate QR first'); return; }
+  // Try Web Share API (mobile)
+  const qrUrl = infoEl ? (infoEl.textContent.match(/http[^\s]+/) || [''])[0] : window.location.href;
+  if (navigator.share) {
+    navigator.share({
+      title: 'KP Patil Attendance QR',
+      text: 'Scan this QR to mark your attendance. Session #' + (sessId || ''),
+      url: qrUrl || window.location.href
+    }).catch(() => {});
+  } else {
+    // Fallback — copy URL to clipboard
+    navigator.clipboard.writeText(qrUrl || window.location.href).then(() => {
+      alert('QR link copied to clipboard! Paste and share with students.');
+    }).catch(() => {
+      prompt('Copy this QR link:', qrUrl || window.location.href);
+    });
+  }
+}
+
+function refreshLive() {
+  if (!sessId) return;
+  fetch(`/attendance/session?id=${sessId}`).then(r => r.json()).then(rows => {
+    const p = rows.filter(r => r.is_present);
+    let h = `<div style="font-size:12px;color:var(--green);font-weight:700;margin-bottom:8px;">✅ ${p.length} / ${rows.length} Present</div>`;
+    p.forEach(r => {
+      h += `<div style="display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;">
+        <span style="color:var(--green);">✓</span>
+        <strong>${r.name}</strong>
+        <span style="color:var(--muted);">Roll: ${r.roll_no}</span>
+        <span style="margin-left:auto;color:var(--muted);font-size:10px;">${(r.marked_at || '').substring(11, 16)}</span>
+        ${r.location_verified ? '<span style="color:var(--green);font-size:10px;">📍</span>' : ''}
+      </div>`;
+    });
+    document.getElementById('live-list').innerHTML = h || '<div style="color:var(--muted);font-size:12px;">No students yet</div>';
+  });
+}
+</script>
+{% endblock %}

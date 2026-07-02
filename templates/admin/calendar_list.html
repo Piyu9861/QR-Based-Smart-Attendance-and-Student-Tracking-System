@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Academic Calendar — K.P. Patil{% endblock %}
+{% block topbar_title %}<i class="fas fa-calendar" style="color:var(--gold)"></i> Academic Calendar{% endblock %}
+{% block topbar_actions %}
+<a href="/calendar/add" class="btn btn-gold btn-sm"><i class="fas fa-plus"></i> Add Event</a>
+{% endblock %}
+{% block sidebar_nav %}
+<a class="nav-link" href="/dashboard"><i class="fas fa-chart-pie"></i> Dashboard</a>
+<a class="nav-link active" href="/calendar"><i class="fas fa-calendar"></i> Calendar</a>
+{% endblock %}
+{% block content %}
+<div class="section-hdr">
+  <div class="section-hdr-left"><div class="sh-title">Academic Calendar</div><div class="sh-sub">{{ events|length }} events scheduled</div></div>
+  <a href="/calendar/add" class="btn btn-gold btn-sm"><i class="fas fa-plus"></i> Add Event</a>
+</div>
+<div class="card" style="padding:0;overflow:hidden;">
+  <table class="data-table">
+    <thead><tr><th>#</th><th>Title</th><th>Date</th><th>Type</th><th>Description</th><th>Action</th></tr></thead>
+    <tbody>
+    {% for e in events %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td><strong>{{ e.title }}</strong></td>
+      <td>{{ e.date }}</td>
+      <td><span class="badge {% if e.type=='holiday' %}badge-red{% elif e.type=='exam' %}badge-gold{% else %}badge-blue{% endif %}">{{ e.type }}</span></td>
+      <td style="font-size:12px;color:var(--muted);">{{ e.description }}</td>
+      <td><a href="/calendar/delete?id={{ e.id }}" class="action-btn action-delete" onclick="return confirm('Delete this event?')"><i class="fas fa-trash"></i></a></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px;">No events found</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

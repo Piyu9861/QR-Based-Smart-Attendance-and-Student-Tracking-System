@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% block title %}Import Data — K.P. Patil{% endblock %}
+{% block topbar_title %}<i class="fas fa-file-upload" style="color:var(--gold)"></i> Import Data{% endblock %}
+{% block sidebar_nav %}
+<a class="nav-link" href="/dashboard"><i class="fas fa-chart-pie"></i> Dashboard</a>
+<a class="nav-link active" href="/import"><i class="fas fa-file-upload"></i> Import Data</a>
+<a class="nav-link" href="/students"><i class="fas fa-user-graduate"></i> Students</a>
+{% endblock %}
+{% block content %}
+<div class="section-hdr">
+  <div class="section-hdr-left">
+    <div class="sh-title">Import Student Data from CSV / Excel</div>
+    <div class="sh-sub">Upload a CSV file — data automatically goes into the database</div>
+  </div>
+  <a href="/students" class="btn btn-outline btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start;">
+  <!-- Upload Card -->
+  <div class="card">
+    <div class="card-title"><i class="fas fa-upload" style="color:var(--gold)"></i> Upload File</div>
+    <div id="drop-zone" style="border:2px dashed rgba(240,180,41,.3);border-radius:14px;padding:40px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:16px;"
+      onclick="document.getElementById('file-input').click()"
+      ondragover="event.preventDefault();this.style.borderColor='var(--gold)'"
+      ondragleave="this.style.borderColor='rgba(240,180,41,.3)'"
+      ondrop="handleDrop(event)">
+      <div style="font-size:44px;margin-bottom:12px;">📄</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;">Drop CSV/Excel file here</div>
+      <div style="font-size:12px;color:var(--muted);">or click to browse</div>
+      <div id="file-name" style="margin-top:12px;font-size:12px;color:var(--green);font-weight:600;"></div>
+    </div>
+    <input type="file" id="file-input" accept=".csv,.xlsx,.xls" style="display:none;" onchange="handleFile(this)">
+    <div class="form-group">
+      <label class="form-label">Department (if not in file)</label>
+      <select class="form-input" id="dept-select">
+        <option value="">-- Auto from file --</option>
+        {% for d in depts %}<option value="{{ d.id }}">{{ d.department_name }}</option>{% endfor %}
+      </select>
+    </div>
+    <button class="btn btn-gold" style="width:100%;font-size:15px;padding:12px;" onclick="uploadFile()" id="upload-btn" disabled>
+      <i class="fas fa-database"></i> Import to Database
+    </button>
+    <!-- Result -->
+    <div id="result" style="display:none;margin-top:14px;border-radius:12px;padding:14px;font-size:13px;"></div>
+  </div>
+
+  <!-- Guide Card -->
+  <div>
+    <div class="card">
+      <div class="card-title"><i class="fas fa-info-circle" style="color:var(--gold)"></i> CSV Format Guide</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Your CSV file should have these column headers in the first row:</p>
+      <div style="background:rgba(255,255,255,.04);border-radius:10px;overflow:hidden;">
+        <table class="data-table">
+          <thead><tr><th>Column Name</th><th>Example</th><th>Required?</th></tr></thead>
+          <tbody>
+            {% for col, ex, req in [
+              ('roll_no','01','✅ Yes'),
+              ('enrollment_no','AIML601','✅ Yes'),
+              ('name','Patil Ankita Tanaji','✅ Yes'),
+              ('mobile','9988770001','✅ Yes'),
+              ('class','1st Year / 2nd Year / 3rd Year','✅ Yes'),
+              ('email','ankita@gmail.com','No'),
+              ('parent_mobile','8898890001','No'),
+              ('category','OPEN / OBC / SC / ST','No'),
+              ('gender','Male / Female','No'),
+              ('blood_group','O+','No'),
+              ('address','Mudal, Kolhapur','No'),
+              ('mark_10th','88.50','No'),
+              ('mark_sem1','79.00','No'),
+              ('mark_sem2','82.00','No'),
+              ('mark_sem3','77.00','No'),
+              ('mark_sem4','80.00','No'),
+              ('mark_sem5','75.00','No'),
+              ('mark_sem6','—','No'),
+            ] %}
+            <tr>
+              <td style="font-family:monospace;font-size:11px;color:var(--gold);">{{ col }}</td>
+              <td style="font-size:11px;color:var(--muted);">{{ ex }}</td>
+              <td style="font-size:11px;">{{ req }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="fas fa-download" style="color:var(--green)"></i> Download Template</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Download a ready-made CSV template to fill in:</p>
+      <button onclick="downloadTemplate()" class="btn btn-outline" style="width:100%;">
+        <i class="fas fa-file-csv"></i> Download CSV Template
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+let selectedFile = null;
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').style.borderColor = 'rgba(240,180,41,.3)';
+  const file = e.dataTransfer.files[0];
+  if(file) processFile(file);
+}
+
+function handleFile(input) {
+  if(input.files[0]) processFile(input.files[0]);
+}
+
+function processFile(file) {
+  selectedFile = file;
+  document.getElementById('file-name').textContent = '📎 ' + file.name + ' (' + (file.size/1024).toFixed(1) + ' KB)';
+  document.getElementById('upload-btn').disabled = false;
+  document.getElementById('drop-zone').style.borderColor = 'var(--green)';
+}
+
+function uploadFile() {
+  if(!selectedFile) return;
+  const btn = document.getElementById('upload-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importing...';
+
+  const fd = new FormData();
+  fd.append('file', selectedFile);
+  fd.append('dept_id', document.getElementById('dept-select').value);
+
+  fetch('/import/students', {method:'POST', body:fd})
+    .then(r=>r.json())
+    .then(data => {
+      const resultEl = document.getElementById('result');
+      resultEl.style.display = 'block';
+      if(data.error) {
+        resultEl.style.background = 'rgba(245,101,101,.1)';
+        resultEl.style.border = '1px solid rgba(245,101,101,.3)';
+        resultEl.style.color = 'var(--red)';
+        resultEl.innerHTML = '❌ ' + data.error;
+      } else {
+        resultEl.style.background = 'rgba(34,211,160,.08)';
+        resultEl.style.border = '1px solid rgba(34,211,160,.2)';
+        resultEl.style.color = 'var(--green)';
+        let html = `✅ <strong>${data.success} students imported</strong> into database!`;
+        if(data.errors && data.errors.length) {
+          html += `<div style="margin-top:10px;color:var(--red);font-size:12px;">
+            ⚠️ ${data.errors.length} rows had errors:<br>${data.errors.slice(0,5).join('<br>')}
+            ${data.errors.length>5?`<br>...and ${data.errors.length-5} more`:''}
+          </div>`;
+        }
+        html += `<div style="margin-top:12px;"><a href="/students" class="btn btn-gold btn-sm"><i class="fas fa-users"></i> View Students</a></div>`;
+        resultEl.innerHTML = html;
+      }
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-database"></i> Import to Database';
+    })
+    .catch(e => {
+      document.getElementById('result').style.display='block';
+      document.getElementById('result').innerHTML = '❌ Upload failed: ' + e;
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-database"></i> Import to Database';
+    });
+}
+
+function downloadTemplate() {
+  const headers = ['roll_no','enrollment_no','name','email','mobile','parent_mobile',
+    'class','category','gender','blood_group','address',
+    'mark_10th','mark_sem1','mark_sem2','mark_sem3','mark_sem4','mark_sem5','mark_sem6'];
+  const sample = ['01','AIML601','Patil Ankita Tanaji','ankita@gmail.com','9988770001',
+    '8898890001','3rd Year','OBC','Female','O+','Mudal, Kolhapur',
+    '88.50','79.00','82.00','77.00','80.00','75.00',''];
+  const csv = [headers.join(','), sample.join(',')].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'KPPatil_Student_Import_Template.csv';
+  a.click();
+}
+</script>
+{% endblock %}

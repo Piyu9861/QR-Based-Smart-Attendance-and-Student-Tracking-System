@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Login — K.P. Patil Smart Attendance</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--navy:#0d1b35;--navy2:#122040;--gold:#f0b429;--gold2:#f7d070;--text:#e2e8f8;--muted:#6b7fa8;--red:#f56565;--border:rgba(240,180,41,0.2);--green:#22d3a0;}
+body{font-family:'DM Sans',sans-serif;background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background-image:radial-gradient(ellipse 80% 60% at 15% 20%,rgba(240,180,41,0.07),transparent 60%),
+  radial-gradient(ellipse 60% 50% at 85% 80%,rgba(56,178,255,0.05),transparent 60%);}
+.login-wrap{display:grid;grid-template-columns:1fr 1fr;width:100%;max-width:880px;min-height:520px;border-radius:24px;overflow:hidden;border:1px solid var(--border);box-shadow:0 30px 80px rgba(0,0,0,0.6);margin:20px;}
+.login-left{background:linear-gradient(135deg,rgba(240,180,41,0.12),rgba(56,178,255,0.06));padding:46px 36px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;border-right:1px solid var(--border);}
+/* College logo */
+.college-logo{width:82px;height:82px;border-radius:50%;border:3px solid rgba(200,168,75,.7);margin-bottom:14px;background:#fff;object-fit:cover;}
+.college-name{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--gold);margin-bottom:2px;}
+.college-sub{font-size:11px;color:var(--muted);margin-bottom:20px;}
+.divider{width:40px;height:2px;background:rgba(240,180,41,.3);margin:14px auto;}
+.role-icon{font-size:52px;margin-bottom:12px;}
+.role-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--gold);margin-bottom:8px;}
+.role-desc{font-size:12px;color:var(--muted);line-height:1.6;max-width:210px;}
+.role-badge{display:inline-block;background:rgba(240,180,41,0.15);border:1px solid rgba(240,180,41,0.3);color:var(--gold);padding:4px 14px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-top:14px;}
+.login-right{background:rgba(18,32,64,0.98);padding:46px 38px;display:flex;flex-direction:column;justify-content:center;}
+.login-right h2{font-family:'Syne',sans-serif;font-size:21px;font-weight:700;margin-bottom:5px;}
+.login-right p{font-size:13px;color:var(--muted);margin-bottom:24px;}
+.form-group{margin-bottom:16px;}
+.form-label{display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.form-input{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text);padding:11px 14px;border-radius:12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;}
+.form-input:focus{border-color:var(--gold);}
+.btn-login{width:100%;padding:12px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);font-size:15px;font-weight:700;border:none;border-radius:12px;cursor:pointer;font-family:'Syne',sans-serif;transition:transform .2s;}
+.btn-login:hover{transform:translateY(-2px);}
+.error-box{background:rgba(245,101,101,.1);border:1px solid rgba(245,101,101,.3);color:var(--red);padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:14px;}
+
+.back-link{text-align:center;margin-top:16px;font-size:13px;color:var(--muted);}
+.back-link a{color:var(--gold);text-decoration:none;}
+@media(max-width:620px){.login-wrap{grid-template-columns:1fr;}.login-left{display:none;}}
+</style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-left">
+    <!-- College Logo -->
+    <img src="/static/img/college_logo.jpg" class="college-logo" alt="KP Patil Institute of Technology">
+    <div class="college-name">K.P. Patil Polytechnic</div>
+    <div class="college-sub">Mudal, Bhudargad, Kolhapur</div>
+    <div class="divider"></div>
+    {% if role == 'principal' %}
+      <div class="role-icon">👑</div>
+      <div class="role-title">Principal</div>
+      <div class="role-desc">Full college dashboard with department analytics, attendance & reports</div>
+    {% elif role == 'hod' %}
+      <div class="role-icon">🏫</div>
+      <div class="role-title">HOD Login</div>
+      <div class="role-desc">Manage your department — students, teachers, timetable and attendance</div>
+    {% elif role == 'teacher' %}
+      <div class="role-icon">👨‍🏫</div>
+      <div class="role-title">Teacher Login</div>
+      <div class="role-desc">Generate QR codes, manage attendance sessions and view reports</div>
+    {% else %}
+      <div class="role-icon">🎓</div>
+      <div class="role-title">Student Login</div>
+      <div class="role-desc">Check attendance, view marks and academic progress</div>
+    {% endif %}
+    <div class="role-badge">{{ role }}</div>
+  </div>
+
+  <div class="login-right">
+    <h2>Welcome Back 👋</h2>
+    <p>Sign in to your <strong>{{ role }}</strong> account</p>
+    {% if error %}<div class="error-box">❌ {{ error }}</div>{% endif %}
+    <form method="POST" action="/login-auth" id="login-form" onsubmit="return validateLogin(event)">
+      <input type="hidden" name="role" value="{{ role }}">
+      <div class="form-group">
+        <label class="form-label">
+          {% if role == 'student' %}Mobile Number{% elif role == 'teacher' %}Email Address{% else %}Username{% endif %}
+        </label>
+        <input class="form-input" type="text" name="username" id="username"
+          placeholder="{% if role=='student' %}Enter 10-digit mobile number{% elif role=='teacher' %}Enter email address{% else %}Enter username{% endif %}"
+          required autofocus autocomplete="username">
+        <div id="username-err" style="color:#f56565;font-size:11px;margin-top:4px;display:none;"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div style="position:relative;">
+          <input class="form-input" type="password" name="password" id="password"
+            placeholder="Enter your password" required autocomplete="current-password"
+            minlength="8" style="padding-right:44px;">
+          <button type="button" onclick="togglePwd()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#6b7fa8;cursor:pointer;font-size:15px;" title="Show/hide password">
+            <i class="fas fa-eye" id="eye-icon"></i>
+          </button>
+        </div>
+        <div id="password-err" style="color:#f56565;font-size:11px;margin-top:4px;display:none;"></div>
+      </div>
+      <button type="submit" class="btn-login" id="submit-btn">Sign In →</button>
+    </form>
+    <script>
+    const ROLE = "{{ role }}";
+    function togglePwd(){
+      const p=document.getElementById('password');
+      const icon=document.getElementById('eye-icon');
+      if(p.type==='password'){p.type='text';icon.className='fas fa-eye-slash';}
+      else{p.type='password';icon.className='fas fa-eye';}
+    }
+    function showErr(id,msg){const el=document.getElementById(id);el.textContent=msg;el.style.display='block';}
+    function clearErr(id){document.getElementById(id).style.display='none';}
+
+    function validateLogin(e){
+      let valid=true;
+      const un=document.getElementById('username').value.trim();
+      const pw=document.getElementById('password').value;
+      clearErr('username-err'); clearErr('password-err');
+
+      // Username validation
+      if(!un){showErr('username-err','This field is required.');valid=false;}
+      else if(ROLE==='student'){
+        if(!/^\d{10}$/.test(un)){showErr('username-err','Mobile number must be exactly 10 digits.');valid=false;}
+      } else if(ROLE==='teacher'){
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(un)){showErr('username-err','Enter a valid email address.');valid=false;}
+      } else {
+        if(un.length<3){showErr('username-err','Username must be at least 3 characters.');valid=false;}
+      }
+
+      // Password validation
+      if(!pw){showErr('password-err','Password is required.');valid=false;}
+      else if(pw.length<8){showErr('password-err','Password must be at least 8 characters.');valid=false;}
+
+      if(valid){
+        const btn=document.getElementById('submit-btn');
+        btn.disabled=true; btn.textContent='Signing in...';
+      }
+      return valid;
+    }
+    // Live validation
+    document.getElementById('username').addEventListener('input',function(){clearErr('username-err');});
+    document.getElementById('password').addEventListener('input',function(){clearErr('password-err');});
+    </script>
+
+    <div class="back-link">← <a href="/role-select">Choose different role</a></div>
+  </div>
+</div>
+</body>
+</html>
